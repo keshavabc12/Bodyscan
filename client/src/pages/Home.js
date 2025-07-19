@@ -1,0 +1,193 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+function Home() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSubtype, setSelectedSubtype] = useState("All");
+  const [subtypes, setSubtypes] = useState([]);
+  const navigate = useNavigate();
+
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
+
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/products")
+      .then(res => {
+        setProducts(res.data);
+        setLoading(false);
+
+        const subtypeSet = new Set();
+        res.data.forEach(product => {
+          if (Array.isArray(product.subTypes)) {
+            product.subTypes.forEach(sub => subtypeSet.add(sub));
+          }
+        });
+
+        setSubtypes(["All", ...Array.from(subtypeSet)]);
+      })
+      .catch(err => {
+        console.error("Error fetching products:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleDelete = async (productId) => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setProducts(prev => prev.filter(p => p._id !== productId));
+      } catch (err) {
+        console.error("Error deleting product:", err);
+        alert("Failed to delete product");
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("token");
+    navigate("/");
+    window.location.reload();
+  };
+
+  const filteredProducts = selectedSubtype === "All"
+    ? products
+    : products.filter(product =>
+        Array.isArray(product.subTypes) &&
+        product.subTypes.includes(selectedSubtype)
+      );
+
+  return (
+    <div className="container-fluid px-0">
+      {/* Header */}
+      <div
+        className="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 text-white"
+        style={{ backgroundColor: "white" }}
+      >
+        <img
+          src="/images/logo.jpeg"
+          alt="E-Kart Logo"
+          style={{ height: "60px", objectFit: "contain", borderRadius: "8px" }}
+          onError={(e) => {
+            e.target.src = "https://via.placeholder.com/150x60?text=No+Logo";
+          }}
+        />
+        <div className="d-flex align-items-center gap-3 flex-wrap mt-3 mt-md-0">
+          {subtypes.length > 1 && (
+            <select
+              className="form-select"
+              value={selectedSubtype}
+              onChange={(e) => setSelectedSubtype(e.target.value)}
+            >
+              {subtypes.map((sub, idx) => (
+                <option key={idx} value={sub}>{sub}</option>
+              ))}
+            </select>
+          )}
+
+          {!isAdmin && (
+            <Link to="/admin" className="btn btn-light">Admin Login</Link>
+          )}
+          {isAdmin && (
+            <>
+              <Link to="/admin-panel" className="btn btn-light">Add Product</Link>
+              <button className="btn btn-outline-light" onClick={handleLogout}>Logout</button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Slider */}
+<div id="carouselExample" className="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000">
+  <div className="carousel-inner">
+    <div className="carousel-item active">
+      <img src="/images/sliderl.jpeg" className="d-block w-100" alt="Slide 1" />
+    </div>
+    <div className="carousel-item">
+      <img src="/images/sli.jpeg" className="d-block w-100" alt="Slide 2" />
+    </div>
+    <div className="carousel-item">
+      <img src="/images/slider.jpeg" className="d-block w-100" alt="Slide 3" />
+    </div>
+  </div>
+  <button className="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+    <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span className="visually-hidden">Previous</span>
+  </button>
+  <button className="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+    <span className="carousel-control-next-icon" aria-hidden="true"></span>
+    <span className="visually-hidden">Next</span>
+  </button>
+</div>
+
+
+      {/* Product Cards */}
+      <div className="container">
+        {loading ? (
+          <p className="text-center">Loading...</p>
+        ) : (
+          <div className="row">
+            {filteredProducts.length > 0 ? filteredProducts.map(product => {
+              const imageName = product.image?.split("/").pop();
+              const imageUrl = `http://localhost:5000/uploads/${imageName}`;
+
+              return (
+                <div key={product._id} className="col-md-4 mb-4">
+                  <div
+                    className="card h-100 shadow-sm text-center border-0"
+                    style={{ transition: "transform 0.3s", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                    onClick={() => navigate(`/category/${product.category}`)}
+                  >
+                    <img
+                      src={imageName ? imageUrl : "https://via.placeholder.com/300x400?text=No+Image"}
+                      alt={product.category}
+                      className="card-img-top img-fluid p-3"
+                      style={{ maxHeight: '350px', objectFit: 'contain', borderRadius: '10px' }}
+                      onError={(e) => {
+                        e.target.src = "https://via.placeholder.com/300x400?text=Image+Not+Found";
+                      }}
+                    />
+                    <div className="card-body">
+                      <h5 className="card-title">{product.category}</h5>
+                      {Array.isArray(product.subTypes) && product.subTypes.length > 0 ? (
+                        <ul className="list-group list-group-flush mb-2">
+                          {product.subTypes.map((type, i) => (
+                            <li key={i} className="list-group-item">{type}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-muted">No sub-types</p>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="btn btn-outline-danger btn-sm mt-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(product._id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }) : (
+              <p className="text-center">No products found.</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Home;
