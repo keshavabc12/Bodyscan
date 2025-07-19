@@ -6,7 +6,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url'; // For __dirname in ES module
+import { fileURLToPath } from 'url';
 
 import adminRoutes from './routes/admin.routes.js';
 import productRoutes from './routes/product.routes.js';
@@ -14,29 +14,35 @@ import productRoutes from './routes/product.routes.js';
 dotenv.config();
 const app = express();
 
-// ✅ Fix for __dirname in ES modules
+// ✅ __dirname workaround for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ CORS setup (Allow frontend only)
+// ✅ Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: true, // Let frontend (Render domain) call backend
   credentials: true,
 }));
-
-// ✅ Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ✅ Serve uploaded images statically
+// ✅ Serve uploaded images
 const uploadsPath = path.join(__dirname, 'uploads');
-console.log("🖼️ Serving static files from:", uploadsPath);
 app.use('/uploads', express.static(uploadsPath));
 
-// ✅ API Routes
+// ✅ API routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
+
+// ✅ Serve React frontend
+const clientBuildPath = path.join(__dirname, '../client/build');
+app.use(express.static(clientBuildPath));
+
+// ✅ Catch-all route to serve index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
 
 // ✅ Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI, {
@@ -47,8 +53,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at: http://localhost:${PORT}`);
-    console.log(`📂 Images accessible via: http://localhost:${PORT}/uploads/<filename>`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
 }).catch((err) => {
   console.error('❌ MongoDB connection error:', err);
