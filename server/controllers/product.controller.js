@@ -16,9 +16,10 @@ export const addProduct = async (req, res) => {
   try {
     const { category } = req.body;
     let { subTypes } = req.body;
-    const imagePath = req.file ? req.file.filename : null;
 
-    if (!category || !subTypes || !imagePath) {
+    const imageUrl = req.file ? req.file.path : null; // ✅ Cloudinary URL
+
+    if (!category || !subTypes || !imageUrl) {
       return res.status(400).json({ message: "All fields are required including image." });
     }
 
@@ -29,7 +30,7 @@ export const addProduct = async (req, res) => {
     const product = new Product({
       category,
       subTypes,
-      image: imagePath,
+      image: imageUrl, // ✅ Save Cloudinary URL
     });
 
     await product.save();
@@ -60,7 +61,7 @@ export const updateProduct = async (req, res) => {
     }
 
     if (req.file) {
-      updatedFields.image = req.file.filename; // Save new image filename
+      updatedFields.image = req.file.path; // ✅ Cloudinary URL
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(id, updatedFields, { new: true });

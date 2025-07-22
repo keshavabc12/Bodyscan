@@ -6,7 +6,10 @@ import {
   deleteProduct,
 } from "../controllers/product.controller.js";
 
-import { upload } from "../middleware/upload.js";
+// ✅ Use Cloudinary-based multer upload middleware
+import { upload } from "../middleware/cloudinary.js";
+
+// ✅ Auth middlewares
 import { authenticateToken, verifyAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -14,10 +17,10 @@ const router = express.Router();
 // ✅ Public route - Get all products
 router.get("/", getAllProducts);
 
-// ✅ Admin-only - Add a new product (image upload, no ID in route)
+// ✅ Admin-only - Add a new product with image upload to Cloudinary
 router.post("/", authenticateToken, verifyAdmin, upload.single("image"), addProduct);
 
-// ✅ Admin-only - Update product by ID
+// ✅ Admin-only - Update product with new image if provided
 router.put("/:id", authenticateToken, verifyAdmin, upload.single("image"), updateProduct);
 
 // ✅ Admin-only - Delete product by ID

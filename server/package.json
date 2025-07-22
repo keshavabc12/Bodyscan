@@ -15,7 +15,8 @@
     "express-fileupload": "^1.5.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0"
   },
   "scripts": {
     "start": "node server.js",

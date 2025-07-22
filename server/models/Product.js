@@ -6,11 +6,11 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  subTypes: [{ 
-    type: String 
-  }],
+  subTypes: [
+    { type: String }
+  ],
   image: {
-    type: String,  // ✅ Stores filename only, like "123-shirt.png"
+    type: String, // ✅ Stores full Cloudinary URL like "https://res.cloudinary.com/..."
     required: true,
   },
 });
