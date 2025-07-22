@@ -16,9 +16,11 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'product_images', // Optional: folder name in Cloudinary
     allowed_formats: ['jpg', 'jpeg', 'png'],
+    // Removed duplicate transformation settings
   },
 });
 
 const upload = multer({ storage });
 
-export { cloudinary, upload };
+// Fixed: Export only the upload middleware
+export { upload };

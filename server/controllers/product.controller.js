@@ -1,39 +1,46 @@
 import Product from "../models/Product.js";
 
-// Get all products
+// GET all products (public)
 export const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find();
     console.log("Fetched products:", products);
     res.json(products);
   } catch (err) {
+    console.error("Fetch Error:", err);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };
 
-// Add a new product
+// POST Add new product (admin only)
 export const addProduct = async (req, res) => {
   try {
     const { category } = req.body;
     let { subTypes } = req.body;
+    const imageUrl = req.file ? req.file.path : null;
 
-    const imageUrl = req.file ? req.file.path : null; // ✅ Cloudinary URL
-
+    // Improved validation
     if (!category || !subTypes || !imageUrl) {
-      return res.status(400).json({ message: "All fields are required including image." });
+      return res.status(400).json({ 
+        message: "Category, subTypes and image are required" 
+      });
     }
 
+    // Handle subTypes string
     if (typeof subTypes === "string") {
-      subTypes = subTypes.split(',').map(s => s.trim());
+      subTypes = subTypes.split(",").map(s => s.trim());
     }
 
-    const product = new Product({
-      category,
-      subTypes,
-      image: imageUrl, // ✅ Save Cloudinary URL
-    });
+    // Validate subTypes array (FIXED: removed extra parenthesis)
+    if (!Array.isArray(subTypes)) {
+      return res.status(400).json({ 
+        message: "subTypes must be an array or comma-separated string" 
+      });
+    }
 
+    const product = new Product({ category, subTypes, image: imageUrl });
     await product.save();
+
     res.status(201).json({ message: "Product added successfully", product });
 
   } catch (err) {
@@ -42,49 +49,20 @@ export const addProduct = async (req, res) => {
   }
 };
 
-// Update a product by ID
-export const updateProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { category } = req.body;
-    let { subTypes } = req.body;
-
-    const updatedFields = {};
-
-    if (category) updatedFields.category = category;
-
-    if (subTypes) {
-      if (typeof subTypes === "string") {
-        subTypes = subTypes.split(',').map(s => s.trim());
-      }
-      updatedFields.subTypes = subTypes;
-    }
-
-    if (req.file) {
-      updatedFields.image = req.file.path; // ✅ Cloudinary URL
-    }
-
-    const updatedProduct = await Product.findByIdAndUpdate(id, updatedFields, { new: true });
-
-    if (!updatedProduct) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    res.json({ message: "Product updated successfully", product: updatedProduct });
-
-  } catch (err) {
-    console.error("Update Product Error:", err);
-    res.status(500).json({ message: "Failed to update product", error: err.message });
-  }
-};
-
-// Delete a product by ID
+// DELETE product by ID (admin only)
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    await Product.findByIdAndDelete(id);
-    res.status(204).send();
+    const product = await Product.findByIdAndDelete(id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json({ message: "Product deleted successfully" });
+
   } catch (err) {
+    console.error("Delete Product Error:", err);
     res.status(500).json({ error: "Failed to delete product" });
   }
 };

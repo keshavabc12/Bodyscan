@@ -1,5 +1,4 @@
 // middleware/auth.js
-
 import jwt from 'jsonwebtoken';
 
 // Middleware to check if user is authenticated
@@ -9,7 +8,10 @@ export const authenticateToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ message: 'Access token missing' });
 
-  jwt.verify(token, process.env.JWT_SECRET || 'yourSecretKey', (err, user) => {
+  // Fixed: Use JWT_SECRET with fallback
+  const secret = process.env.JWT_SECRET || 'yourSecretKey';
+  
+  jwt.verify(token, secret, (err, user) => {
     if (err) return res.status(403).json({ message: 'Invalid token' });
 
     req.user = user;

@@ -10,7 +10,6 @@ import { fileURLToPath } from 'url';
 import adminRoutes from './routes/admin.routes.js';
 import productRoutes from './routes/product.routes.js';
 
-// Initialize environment variables
 dotenv.config();
 
 if (!process.env.MONGO_URI) {
@@ -58,6 +57,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve images from local uploads folder (only needed if using local uploads)
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
+
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
@@ -72,11 +75,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend (React)
+// Serve frontend React build
 const clientBuildPath = path.join(__dirname, '../client/build');
 app.use(express.static(clientBuildPath));
 
-app.get('*', (req, res) => {
+// Fixed: Use regex for catch-all route to avoid path-to-regexp errors
+app.get(/^(?!\/api).+/, (req, res) => {
   res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
@@ -92,7 +96,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to MongoDB
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 5000,
 });
