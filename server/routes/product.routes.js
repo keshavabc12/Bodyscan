@@ -26,6 +26,7 @@ router.post(
 );
 
 // ✅ Admin-only - Delete product by ID
+// FIXED: Removed extra quotation mark in route parameter
 router.delete("/:id", authenticateToken, verifyAdmin, deleteProduct);
 
 export default router;
