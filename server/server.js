@@ -13,20 +13,17 @@ import productRoutes from './routes/product.routes.js';
 // Initialize environment variables
 dotenv.config();
 
-// Validate required environment variables
 if (!process.env.MONGO_URI) {
-  console.error('❌ MONGO_URI is not defined in environment variables');
+  console.error('❌ MONGO_URI is not defined');
   process.exit(1);
 }
 
 if (!process.env.JWT_SECRET) {
-  console.warn('⚠️ JWT_SECRET not found! Using fallback (unsafe for production)');
+  console.warn('⚠️ JWT_SECRET not found! Using fallback');
   process.env.JWT_SECRET = 'temporary_dev_secret_' + Date.now();
 }
 
 const app = express();
-
-// Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -43,7 +40,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Request body trimming middleware
+// Trim strings in request body
 app.use((req, res, next) => {
   if (req.body) {
     Object.keys(req.body).forEach(key => {
@@ -55,22 +52,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging middleware
+// Request logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// ❌ REMOVE local static folder (no longer used with Cloudinary)
-// const uploadsPath = path.join(__dirname, 'uploads');
-// console.log("🖼️ Serving static files from:", uploadsPath);
-// app.use('/uploads', express.static(uploadsPath));
-
-// API Routes
+// Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -80,16 +72,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Serve frontend (React)
+const clientBuildPath = path.join(__dirname, '../client/build');
+app.use(express.static(clientBuildPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
+
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error('🚨 Global error handler:', err);
-
+  console.error('🚨 Error:', err);
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ error: 'Invalid JSON payload' });
+    return res.status(400).json({ error: 'Invalid JSON' });
   }
-
   res.status(500).json({
-    error: 'Internal server error',
+    error: 'Internal Server Error',
     details: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
@@ -99,18 +97,9 @@ mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 5000,
 });
 
-// MongoDB connection events
-mongoose.connection.on('connected', () => {
-  console.log('✅ MongoDB connected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.warn('⚠️ MongoDB disconnected');
-});
+mongoose.connection.on('connected', () => console.log('✅ MongoDB connected'));
+mongoose.connection.on('error', (err) => console.error('❌ MongoDB error:', err));
+mongoose.connection.on('disconnected', () => console.warn('⚠️ MongoDB disconnected'));
 
 // Start server
 const PORT = process.env.PORT || 5000;
@@ -120,16 +109,15 @@ const server = app.listen(PORT, () => {
 
 // Graceful shutdown
 const shutdown = () => {
-  console.log('🛑 Shutting down server...');
+  console.log('🛑 Shutting down...');
   server.close(async () => {
-    console.log('🔌 HTTP server closed');
-
+    console.log('🔌 Server closed');
     try {
       await mongoose.disconnect();
       console.log('🔌 MongoDB disconnected');
       process.exit(0);
     } catch (err) {
-      console.error('❌ Error during shutdown:', err);
+      console.error('❌ Shutdown error:', err);
       process.exit(1);
     }
   });
@@ -138,7 +126,6 @@ const shutdown = () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// Global error handlers
 process.on('uncaughtException', (err) => {
   console.error('🚨 Uncaught Exception:', err);
   shutdown();
@@ -146,4 +133,5 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (err) => {
   console.error('🚨 Unhandled Rejection:', err);
+  shutdown();
 });
