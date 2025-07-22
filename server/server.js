@@ -61,10 +61,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve uploaded images statically
-const uploadsPath = path.join(__dirname, 'uploads');
-console.log("🖼️ Serving static files from:", uploadsPath);
-app.use('/uploads', express.static(uploadsPath));
+// ❌ REMOVE local static folder (no longer used with Cloudinary)
+// const uploadsPath = path.join(__dirname, 'uploads');
+// console.log("🖼️ Serving static files from:", uploadsPath);
+// app.use('/uploads', express.static(uploadsPath));
 
 // API Routes
 app.use('/api/admin', adminRoutes);
@@ -83,12 +83,12 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('🚨 Global error handler:', err);
-  
+
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ error: 'Invalid JSON payload' });
   }
-  
-  res.status(500).json({ 
+
+  res.status(500).json({
     error: 'Internal server error',
     details: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
@@ -96,8 +96,6 @@ app.use((err, req, res, next) => {
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
 });
 
@@ -118,7 +116,6 @@ mongoose.connection.on('disconnected', () => {
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running at: http://localhost:${PORT}`);
-  console.log(`📂 Images accessible via: http://localhost:${PORT}/uploads/<filename>`);
 });
 
 // Graceful shutdown
@@ -126,7 +123,7 @@ const shutdown = () => {
   console.log('🛑 Shutting down server...');
   server.close(async () => {
     console.log('🔌 HTTP server closed');
-    
+
     try {
       await mongoose.disconnect();
       console.log('🔌 MongoDB disconnected');

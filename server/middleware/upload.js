@@ -1,29 +1,28 @@
 // middleware/upload.js
-import multer from "multer";
-import path from "path";
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import dotenv from 'dotenv';
 
-// Storage configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Make sure this folder exists
-  },
-  filename: function (req, file, cb) {
-    // Rename file: e.g., 1699768790234-shirt.png
-    cb(null, Date.now() + "-" + file.originalname);
+dotenv.config();
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Define Cloudinary storage for multer
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'products', // Folder name in Cloudinary
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    transformation: [{ width: 600, height: 600, crop: 'limit' }],
+    public_id: (req, file) => `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`
   },
 });
 
-// File filter (optional)
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb(new Error("Only .jpeg, .jpg, .png files are allowed"));
-  }
-};
-
-export const upload = multer({ storage, fileFilter });
+// Export the multer upload middleware
+export const upload = multer({ storage: cloudinaryStorage });
