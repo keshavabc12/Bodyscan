@@ -65,9 +65,39 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use('/api/admin', adminRoutes);
-app.use('/api/products', productRoutes);
+// ===========================================
+// ROUTE DEBUGGING - THIS WILL FIND THE BAD ROUTE
+// ===========================================
+const printRoutes = (router, prefix = '') => {
+  router.stack.forEach(middleware => {
+    if (middleware.route) {
+      // Direct route
+      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+      console.log(`Route: ${methods} ${prefix}${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      // Router middleware
+      const routerPrefix = prefix + (middleware.regexp.source.replace('\\/?', '').replace('(?=\\/|$)', '') || '');
+      printRoutes(middleware.handle, routerPrefix);
+    }
+  });
+};
+
+// ===========================================
+// SAFE ROUTE REGISTRATION WITH ERROR HANDLING
+// ===========================================
+try {
+  console.log('Registering admin routes...');
+  app.use('/api/admin', adminRoutes);
+  
+  console.log('Registering product routes...');
+  app.use('/api/products', productRoutes);
+  
+  console.log('\nAll registered API routes:');
+  printRoutes(app._router);
+} catch (err) {
+  console.error('🚨 Route registration error:', err);
+  process.exit(1);
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -80,20 +110,25 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test route to verify basic functionality
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Server is working!' });
+});
+
 // Serve frontend build in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../client/build');
   
   if (fs.existsSync(clientBuildPath)) {
+    console.log('✅ Serving frontend from:', clientBuildPath);
     app.use(express.static(clientBuildPath));
     
-    // Simplified catch-all route
+    // Catch-all route for client-side routing
     app.get('*', (req, res) => {
       res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
-    console.log('✅ Serving frontend from backend');
   } else {
-    console.warn('⚠️ Frontend build not found. Run "npm run build" in client directory');
+    console.warn('⚠️ Frontend build not found. Skipping frontend serving.');
   }
 }
 
@@ -156,3 +191,14 @@ const shutdown = (signal) => {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('🚨 Uncaught Exception:', err);
+  shutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('🚨 Unhandled Rejection:', err);
+  shutdown('unhandledRejection');
+});
