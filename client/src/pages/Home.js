@@ -11,9 +11,10 @@ function Home() {
   const navigate = useNavigate();
 
   const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const BASE_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/products")
+    axios.get(`${BASE_URL}/api/products`)
       .then(res => {
         setProducts(res.data);
         setLoading(false);
@@ -31,13 +32,13 @@ function Home() {
         console.error("Error fetching products:", err);
         setLoading(false);
       });
-  }, []);
+  }, [BASE_URL]);
 
   const handleDelete = async (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+        await axios.delete(`${BASE_URL}/api/products/${productId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setProducts(prev => prev.filter(p => p._id !== productId));
@@ -67,7 +68,7 @@ function Home() {
       {/* Header */}
       <div
         className="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 text-white"
-        style={{ backgroundColor: "white" }}
+        style={{ backgroundColor: "black" }}
       >
         <img
           src="/images/logo.jpeg"
@@ -89,7 +90,6 @@ function Home() {
               ))}
             </select>
           )}
-
           {!isAdmin && (
             <Link to="/admin" className="btn btn-light">Admin Login</Link>
           )}
@@ -103,28 +103,27 @@ function Home() {
       </div>
 
       {/* Slider */}
-<div id="carouselExample" className="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000">
-  <div className="carousel-inner">
-    <div className="carousel-item active">
-      <img src="/images/sliderl.jpeg" className="d-block w-100" alt="Slide 1" />
-    </div>
-    <div className="carousel-item">
-      <img src="/images/sli.jpeg" className="d-block w-100" alt="Slide 2" />
-    </div>
-    <div className="carousel-item">
-      <img src="/images/slider.jpeg" className="d-block w-100" alt="Slide 3" />
-    </div>
-  </div>
-  <button className="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-    <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-    <span className="visually-hidden">Previous</span>
-  </button>
-  <button className="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-    <span className="carousel-control-next-icon" aria-hidden="true"></span>
-    <span className="visually-hidden">Next</span>
-  </button>
-</div>
-
+      <div id="carouselExample" className="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000">
+        <div className="carousel-inner">
+          <div className="carousel-item active">
+            <img src="/images/sliderl.jpeg" className="d-block w-100" alt="Slide 1" />
+          </div>
+          <div className="carousel-item">
+            <img src="/images/sli.jpeg" className="d-block w-100" alt="Slide 2" />
+          </div>
+          <div className="carousel-item">
+            <img src="/images/slider.jpeg" className="d-block w-100" alt="Slide 3" />
+          </div>
+        </div>
+        <button className="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+          <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span className="visually-hidden">Previous</span>
+        </button>
+        <button className="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+          <span className="carousel-control-next-icon" aria-hidden="true"></span>
+          <span className="visually-hidden">Next</span>
+        </button>
+      </div>
 
       {/* Product Cards */}
       <div className="container">
@@ -134,7 +133,9 @@ function Home() {
           <div className="row">
             {filteredProducts.length > 0 ? filteredProducts.map(product => {
               const imageName = product.image?.split("/").pop();
-              const imageUrl = `http://localhost:5000/uploads/${imageName}`;
+              const imageUrl = imageName
+                ? `${BASE_URL}/uploads/${imageName}`
+                : "https://via.placeholder.com/300x400?text=No+Image";
 
               return (
                 <div key={product._id} className="col-md-4 mb-4">
@@ -146,7 +147,7 @@ function Home() {
                     onClick={() => navigate(`/category/${product.category}`)}
                   >
                     <img
-                      src={imageName ? imageUrl : "https://via.placeholder.com/300x400?text=No+Image"}
+                      src={imageUrl}
                       alt={product.category}
                       className="card-img-top img-fluid p-3"
                       style={{ maxHeight: '350px', objectFit: 'contain', borderRadius: '10px' }}
