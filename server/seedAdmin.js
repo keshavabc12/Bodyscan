@@ -1,34 +1,49 @@
-// seedAdmin.js
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Admin from "./models/Admin.js"; // Adjust path as needed
+import bcrypt from "bcryptjs";
+import Admin from "./models/Admin.js";
 
 dotenv.config();
 
 const MONGO_URI = process.env.MONGO_URI;
 
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI is not defined in environment variables");
+  process.exit(1);
+}
+
 const seedAdmin = async () => {
   try {
     await mongoose.connect(MONGO_URI);
-    console.log("MongoDB connected");
+    console.log("✅ MongoDB connected");
+
+    const username = "admin7";
+    const password = "admin123";
 
     // Check if admin already exists
-    const existing = await Admin.findOne({ username: "admin" });
-    if (existing) {
-      console.log("Admin already exists");
+    const existingAdmin = await Admin.findOne({ username });
+    if (existingAdmin) {
+      console.log("ℹ️ Admin account already exists");
     } else {
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Create new admin
       const newAdmin = new Admin({
-        username: "admin",
-        password: "admin123", // ⚠️ Store hashed password in production
+        username,
+        password: hashedPassword
       });
 
       await newAdmin.save();
-      console.log("Admin created successfully");
+      console.log("✅ Admin created successfully");
+      console.log(`👉 Username: ${username}`);
+      console.log(`👉 Password: ${password}`);
     }
 
-    mongoose.disconnect();
   } catch (err) {
-    console.error("Error creating admin:", err);
+    console.error("❌ Error creating admin:", err.message);
+  } finally {
     mongoose.disconnect();
   }
 };

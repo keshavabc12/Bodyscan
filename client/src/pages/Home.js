@@ -67,7 +67,7 @@ function Home() {
       {/* Header */}
       <div
         className="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 text-white"
-        style={{ backgroundColor: "white" }}
+        style={{ backgroundColor: "black" }}
       >
         <img
           src="/images/logo.jpeg"
