@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Import routes
 import adminRoutes from './routes/admin.routes.js';
@@ -12,8 +13,14 @@ import productRoutes from './routes/product.routes.js';
 
 dotenv.config();
 
-// Enhanced environment validation
-const requiredEnvVars = ['MONGO_URI', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+// Environment validation
+const requiredEnvVars = [
+  'MONGO_URI', 
+  'CLOUDINARY_CLOUD_NAME', 
+  'CLOUDINARY_API_KEY', 
+  'CLOUDINARY_API_SECRET'
+];
+
 requiredEnvVars.forEach(varName => {
   if (!process.env[varName]) {
     console.error(`❌ ${varName} is not defined in environment variables`);
@@ -30,15 +37,15 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Production CORS setup
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
-  process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN : '',
-  process.env.FRONTEND_URL ? process.env.FRONTEND_URL : ''
-].filter(Boolean); // Remove empty strings
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL
+].filter(origin => origin); // Remove falsy values
 
 app.use(cors({
-  origin: allowedOrigins.length > 0 ? allowedOrigins : 'http://localhost:3000',
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -48,18 +55,13 @@ app.use(cors({
 app.options('*', cors());
 
 // Middleware
-app.use(express.json({ limit: '50mb' }));  // Increased for image uploads
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Request logger (more detailed in development)
+// Request logger
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    if (Object.keys(req.body).length > 0) {
-      console.log('Request Body:', JSON.stringify(req.body, null, 2));
-    }
-  }
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
@@ -78,35 +80,37 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend React build in production
+// Serve frontend build in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../client/build');
-  app.use(express.static(clientBuildPath));
   
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(clientBuildPath, 'index.html'));
-  });
+  if (fs.existsSync(clientBuildPath)) {
+    app.use(express.static(clientBuildPath));
+    
+    // Simplified catch-all route
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+    console.log('✅ Serving frontend from backend');
+  } else {
+    console.warn('⚠️ Frontend build not found. Run "npm run build" in client directory');
+  }
 }
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('🚨 Error:', err);
-  
-  // Handle specific errors
-  if (err.name === 'UnauthorizedError') {
-    return res.status(401).json({ error: 'Invalid token' });
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON' });
   }
   
-  // Generic error response
-  res.status(err.status || 500).json({
+  res.status(500).json({
     error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// MongoDB connection with retry logic
+// MongoDB connection with retry
 const connectWithRetry = () => {
   mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000,
@@ -152,13 +156,3 @@ const shutdown = (signal) => {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-process.on('uncaughtException', (err) => {
-  console.error('🚨 Uncaught Exception:', err);
-  shutdown('uncaughtException');
-});
-
-process.on('unhandledRejection', (err) => {
-  console.error('🚨 Unhandled Rejection:', err);
-  shutdown('unhandledRejection');
-});
