@@ -5,18 +5,15 @@ import {
   deleteProduct,
 } from "../controllers/product.controller.js";
 
-// Fixed: Use single upload middleware import
 import { upload } from "../middleware/cloudinary.js";
-
-// Auth middlewares
 import { authenticateToken, verifyAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// ✅ Public - Get all products
+// Public - Get all products
 router.get("/", getAllProducts);
 
-// ✅ Admin-only - Add product with image upload
+// Admin-only - Add product
 router.post(
   "/",
   authenticateToken,
@@ -25,8 +22,7 @@ router.post(
   addProduct
 );
 
-// ✅ Admin-only - Delete product by ID
-// FIXED: Removed extra quotation mark in route parameter
+// Admin-only - Delete product
 router.delete("/:id", authenticateToken, verifyAdmin, deleteProduct);
 
 export default router;

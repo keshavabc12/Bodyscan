@@ -42,7 +42,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   process.env.CORS_ORIGIN,
   process.env.FRONTEND_URL
-].filter(origin => origin); // Remove falsy values
+].filter(origin => origin);
 
 app.use(cors({
   origin: allowedOrigins,
