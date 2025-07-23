@@ -51,8 +51,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Preflight handling
-app.options('*', cors());
+// Preflight handling - FIXED
+app.options('/*', cors());  // Changed from '*' to '/*'
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -66,25 +66,41 @@ app.use((req, res, next) => {
 });
 
 // =================================================================
-// ENHANCED ROUTE DEBUGGING - THIS WILL IDENTIFY THE PROBLEMATIC ROUTE
+// ADVANCED ROUTE INSPECTION WITH PARAMETER VALIDATION
 // =================================================================
-const inspectRoutes = (router) => {
+const validateRoutePath = (path) => {
+  // Check for common issues that break path-to-regexp
+  if (path.includes(':/') || 
+      path.endsWith(':') || 
+      (path.match(/:/g) || []).length !== (path.match(/\/:[a-zA-Z0-9_]+/g) || []).length) {
+    throw new Error(`Invalid route pattern: ${path}`);
+  }
+};
+
+const inspectRoutes = (router, prefix = '') => {
   router.stack.forEach((layer) => {
     if (layer.route) {
-      // Regular route
-      console.log(`Route: ${Object.keys(layer.route.methods)} ${layer.route.path}`);
-    } else if (layer.name === 'router') {
-      // Router middleware
-      console.log(`\nRouter: ${layer.name}`);
-      layer.handle.stack.forEach((handler) => {
-        if (handler.route) {
-          console.log(`  Sub-route: ${Object.keys(handler.route.methods)} ${handler.route.path}`);
-        }
-      });
+      // Validate and log regular route
+      try {
+        validateRoutePath(layer.route.path);
+        console.log(`${prefix}Route: ${Object.keys(layer.route.methods)} ${layer.route.path}`);
+      } catch (err) {
+        console.error(`🚨 ${prefix}INVALID ROUTE: ${layer.route.path} - ${err.message}`);
+        throw err;
+      }
+    } else if (layer.name === 'router' || layer.name === 'bound dispatch') {
+      // Router middleware - recursively inspect
+      const routerName = layer.regexp ? `Regex: ${layer.regexp}` : `Router: ${layer.name}`;
+      console.log(`\n${prefix}${routerName}`);
+      inspectRoutes(layer.handle, prefix + '  ');
+    } else if (layer.regexp) {
+      // Middleware layer
+      console.log(`${prefix}Middleware: ${layer.regexp}`);
     }
   });
 };
 
+console.log('\n===== START ROUTE REGISTRATION =====');
 try {
   console.log('Registering admin routes...');
   app.use('/api/admin', adminRoutes);
@@ -96,9 +112,10 @@ try {
   inspectRoutes(app._router);
   console.log('===== END ROUTE INSPECTION =====\n');
 } catch (err) {
-  console.error('🚨 Route registration error:', err);
+  console.error('🚨 FATAL ROUTE REGISTRATION ERROR:', err);
   process.exit(1);
 }
+console.log('===== END ROUTE REGISTRATION =====\n');
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -120,7 +137,7 @@ if (process.env.NODE_ENV === 'production') {
     app.use(express.static(clientBuildPath));
     
     // Catch-all route for client-side routing
-    app.get('*', (req, res) => {
+    app.get('/*', (req, res) => {
       res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
   } else {
