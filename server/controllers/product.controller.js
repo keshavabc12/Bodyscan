@@ -1,68 +1,84 @@
 import Product from "../models/Product.js";
 
-// GET all products (public)
+// ✅ Get all products (Public)
 export const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find();
-    console.log("Fetched products:", products);
-    res.json(products);
+    console.log("✅ Fetched products:", products.length);
+    res.status(200).json(products);
   } catch (err) {
-    console.error("Fetch Error:", err);
+    console.error("❌ Fetch Error:", err.message);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };
 
-// POST Add new product (admin only)
+// ✅ Add new product (Admin only)
 export const addProduct = async (req, res) => {
   try {
-    const { category } = req.body;
-    let { subTypes } = req.body;
-    const imageUrl = req.file ? req.file.path : null;
+    const { category, subTypes } = req.body;
+    const imageUrl = req.file?.path || req.file?.filename || null;
 
-    // Improved validation
+    // Input validation
     if (!category || !subTypes || !imageUrl) {
-      return res.status(400).json({ 
-        message: "Category, subTypes and image are required" 
+      return res.status(400).json({
+        error: "Category, subTypes, and image are required",
       });
     }
 
-    // Handle subTypes string
-    if (typeof subTypes === "string") {
-      subTypes = subTypes.split(",").map(s => s.trim());
-    }
+    // Ensure subTypes is an array
+    const parsedSubTypes = Array.isArray(subTypes)
+      ? subTypes
+      : subTypes
+          .split(",")
+          .map((type) => type.trim())
+          .filter(Boolean);
 
-    // Validate subTypes array (FIXED: removed extra parenthesis)
-    if (!Array.isArray(subTypes)) {
-      return res.status(400).json({ 
-        message: "subTypes must be an array or comma-separated string" 
+    if (parsedSubTypes.length === 0) {
+      return res.status(400).json({
+        error: "subTypes must be a non-empty array or comma-separated string",
       });
     }
 
-    const product = new Product({ category, subTypes, image: imageUrl });
-    await product.save();
+    // Create and save product
+    const newProduct = new Product({
+      category: category.trim(),
+      subTypes: parsedSubTypes,
+      image: imageUrl,
+    });
 
-    res.status(201).json({ message: "Product added successfully", product });
+    await newProduct.save();
+    console.log("✅ Product added:", newProduct._id);
 
+    res.status(201).json({
+      message: "Product added successfully",
+      product: newProduct,
+    });
   } catch (err) {
-    console.error("Add Product Error:", err);
-    res.status(500).json({ message: "Failed to add product", error: err.message });
+    console.error("❌ Add Product Error:", err.message);
+    res.status(500).json({ error: "Failed to add product" });
   }
 };
 
-// DELETE product by ID (admin only)
+// ✅ Delete product by ID (Admin only)
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findByIdAndDelete(id);
 
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+    // Validate ID format
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: "Invalid product ID format" });
     }
 
-    res.status(200).json({ message: "Product deleted successfully" });
+    const deleted = await Product.findByIdAndDelete(id);
 
+    if (!deleted) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    console.log("✅ Deleted product:", id);
+    res.status(200).json({ message: "Product deleted successfully" });
   } catch (err) {
-    console.error("Delete Product Error:", err);
+    console.error("❌ Delete Product Error:", err.message);
     res.status(500).json({ error: "Failed to delete product" });
   }
 };

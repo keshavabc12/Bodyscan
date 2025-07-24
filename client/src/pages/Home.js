@@ -119,7 +119,7 @@ function Home() {
         </div>
       </div>
 
-      {/* Slider 
+      {/* Slider */}
       <div
         id="carouselExample"
         className="carousel slide mb-4"
@@ -173,7 +173,7 @@ function Home() {
           ></span>
           <span className="visually-hidden">Next</span>
         </button>
-      </div>*/}
+      </div>
 
       {/* Product Cards */}
       <div className="container">

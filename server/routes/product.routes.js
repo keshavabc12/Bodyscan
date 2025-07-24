@@ -10,34 +10,24 @@ import { authenticateToken, verifyAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Debug helper to catch malformed routes
-const wrapRoute = (method, path, ...handlers) => {
-  try {
-    // Validate route path syntax
-    if (path.includes(':/') || path.endsWith(':') || (path.match(/:/g) || []).length > (path.match(/\/:[a-zA-Z0-9_]+/g) || []).length) {
-      throw new Error(`Invalid route pattern: ${method.toUpperCase()} ${path}`);
-    }
-    return router[method](path, ...handlers);
-  } catch (err) {
-    console.error(`🚨 Route registration error: ${err.message}`);
-    throw err; // Rethrow to fail fast during startup
-  }
-};
+// ✅ Public Route - Fetch all products
+router.get("/", getAllProducts);
 
-// Public - Get all products
-wrapRoute('get', '/', getAllProducts);
-
-// Admin-only - Add product
-wrapRoute(
-  'post',
-  '/',
-  authenticateToken,
-  verifyAdmin,
-  upload.single("image"),
-  addProduct
+// ✅ Admin-only - Add new product with image upload
+router.post(
+  "/",                        // Endpoint: POST /api/products/
+  authenticateToken,         // Middleware: Check if logged in
+  verifyAdmin,               // Middleware: Check if user is admin
+  upload.single("image"),    // Upload image using Cloudinary
+  addProduct                 // Controller to handle product creation
 );
 
-// Admin-only - Delete product
-wrapRoute('delete', '/:id', authenticateToken, verifyAdmin, deleteProduct);
+// ✅ Admin-only - Delete product by ID
+router.delete(
+  "/:id",                    // Endpoint: DELETE /api/products/:id
+  authenticateToken,
+  verifyAdmin,
+  deleteProduct
+);
 
 export default router;

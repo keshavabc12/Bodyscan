@@ -7,21 +7,21 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// Import routes
+// Routes
 import adminRoutes from './routes/admin.routes.js';
 import productRoutes from './routes/product.routes.js';
 
 dotenv.config();
 
-// Environment validation
+// Check for required env vars
 const requiredEnvVars = [
-  'MONGO_URI', 
-  'CLOUDINARY_CLOUD_NAME', 
-  'CLOUDINARY_API_KEY', 
+  'MONGO_URI',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET'
 ];
 
-requiredEnvVars.forEach(varName => {
+requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`❌ ${varName} is not defined in environment variables`);
     process.exit(1);
@@ -37,107 +37,65 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS configuration
+// Allowed CORS origins
 const allowedOrigins = [
   'http://localhost:3000',
   process.env.CORS_ORIGIN,
   process.env.FRONTEND_URL
-].filter(origin => origin);
+].filter(Boolean);
 
+// Middleware
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Preflight handling - FIXED
-app.options('/*', cors());  // Changed from '*' to '/*'
-
-// Middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Request logger
+// Logger middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// =================================================================
-// ADVANCED ROUTE INSPECTION WITH PARAMETER VALIDATION
-// =================================================================
-const validateRoutePath = (path) => {
-  // Check for common issues that break path-to-regexp
-  if (path.includes(':/') || 
-      path.endsWith(':') || 
-      (path.match(/:/g) || []).length !== (path.match(/\/:[a-zA-Z0-9_]+/g) || []).length) {
-    throw new Error(`Invalid route pattern: ${path}`);
-  }
-};
-
-const inspectRoutes = (router, prefix = '') => {
-  router.stack.forEach((layer) => {
-    if (layer.route) {
-      // Validate and log regular route
-      try {
-        validateRoutePath(layer.route.path);
-        console.log(`${prefix}Route: ${Object.keys(layer.route.methods)} ${layer.route.path}`);
-      } catch (err) {
-        console.error(`🚨 ${prefix}INVALID ROUTE: ${layer.route.path} - ${err.message}`);
-        throw err;
-      }
-    } else if (layer.name === 'router' || layer.name === 'bound dispatch') {
-      // Router middleware - recursively inspect
-      const routerName = layer.regexp ? `Regex: ${layer.regexp}` : `Router: ${layer.name}`;
-      console.log(`\n${prefix}${routerName}`);
-      inspectRoutes(layer.handle, prefix + '  ');
-    } else if (layer.regexp) {
-      // Middleware layer
-      console.log(`${prefix}Middleware: ${layer.regexp}`);
-    }
-  });
-};
-
+// Route registration
 console.log('\n===== START ROUTE REGISTRATION =====');
 try {
   console.log('Registering admin routes...');
   app.use('/api/admin', adminRoutes);
-  
+
   console.log('Registering product routes...');
   app.use('/api/products', productRoutes);
-  
-  console.log('\n===== START ROUTE INSPECTION =====');
-  inspectRoutes(app._router);
-  console.log('===== END ROUTE INSPECTION =====\n');
+  console.log('===== END ROUTE REGISTRATION =====\n');
 } catch (err) {
   console.error('🚨 FATAL ROUTE REGISTRATION ERROR:', err);
   process.exit(1);
 }
-console.log('===== END ROUTE REGISTRATION =====\n');
 
-// Health check endpoint
+// Health check route
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date(),
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version
+    version: process.env.npm_package_version || '1.0.0'
   });
 });
 
-// Serve frontend build in production
+// Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../client/build');
-  
+
   if (fs.existsSync(clientBuildPath)) {
     console.log('✅ Serving frontend from:', clientBuildPath);
     app.use(express.static(clientBuildPath));
-    
-    // Catch-all route for client-side routing
-    app.get('/*', (req, res) => {
+
+    // ✅ FIXED: Use regex pattern instead of string wildcard
+    app.get(/^(?!\/api).*/, (req, res) => {
       res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
   } else {
@@ -154,24 +112,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-// MongoDB connection with retry
+// MongoDB connection
 const connectWithRetry = () => {
   mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000,
     retryWrites: true,
     w: 'majority'
   })
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    console.log('Retrying connection in 5 seconds...');
-    setTimeout(connectWithRetry, 5000);
-  });
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch((err) => {
+      console.error('❌ MongoDB connection error:', err);
+      console.log('Retrying in 5 seconds...');
+      setTimeout(connectWithRetry, 5000);
+    });
 };
 
 connectWithRetry();
 
-// Start server
+// Start the server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode`);
