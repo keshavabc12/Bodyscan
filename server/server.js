@@ -1,3 +1,5 @@
+// server.js or index.js
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -7,13 +9,21 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// Routes
+// Import routes
 import adminRoutes from './routes/admin.routes.js';
 import productRoutes from './routes/product.routes.js';
 
+// Load environment variables
 dotenv.config();
 
-// Check for required env vars
+// Define current directory (for ES modules)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize Express
+const app = express();
+
+// === ✅ Environment Validation ===
 const requiredEnvVars = [
   'MONGO_URI',
   'CLOUDINARY_CLOUD_NAME',
@@ -21,134 +31,115 @@ const requiredEnvVars = [
   'CLOUDINARY_API_SECRET'
 ];
 
-requiredEnvVars.forEach((varName) => {
-  if (!process.env[varName]) {
-    console.error(`❌ ${varName} is not defined in environment variables`);
+requiredEnvVars.forEach((key) => {
+  if (!process.env[key]) {
+    console.error(`❌ Missing env: ${key}`);
     process.exit(1);
   }
 });
 
 if (!process.env.JWT_SECRET) {
-  console.warn('⚠️ JWT_SECRET not found! Using fallback');
-  process.env.JWT_SECRET = 'temporary_dev_secret_' + Date.now();
+  console.warn('⚠️ JWT_SECRET not defined, using fallback');
+  process.env.JWT_SECRET = 'fallback_' + Date.now();
 }
 
-const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Allowed CORS origins
+// === ✅ Middleware Setup ===
 const allowedOrigins = [
   'http://localhost:3000',
   process.env.CORS_ORIGIN,
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
-// Middleware
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Logger middleware
+// Logger for requests
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// Route registration
-console.log('\n===== START ROUTE REGISTRATION =====');
-try {
-  console.log('Registering admin routes...');
-  app.use('/api/admin', adminRoutes);
+// === ✅ API Routes ===
+console.log('\n== ROUTE REGISTRATION ==');
+app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
 
-  console.log('Registering product routes...');
-  app.use('/api/products', productRoutes);
-  console.log('===== END ROUTE REGISTRATION =====\n');
-} catch (err) {
-  console.error('🚨 FATAL ROUTE REGISTRATION ERROR:', err);
-  process.exit(1);
-}
-
-// Health check route
+// === ✅ Health Check ===
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date(),
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0'
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    env: process.env.NODE_ENV || 'development'
   });
 });
 
-// Serve frontend in production
+// === ✅ Serve React Frontend in Production ===
 if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../client/build');
-
+  const clientBuildPath = path.join(__dirname, 'client/build');
   if (fs.existsSync(clientBuildPath)) {
-    console.log('✅ Serving frontend from:', clientBuildPath);
     app.use(express.static(clientBuildPath));
 
-    // ✅ FIXED: Use regex pattern instead of string wildcard
-    app.get(/^(?!\/api).*/, (req, res) => {
+    // Serve index.html for all non-API routes
+    app.get(/^\/(?!api).*/, (req, res) => {
       res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
+
+    console.log('✅ Serving frontend from:', clientBuildPath);
   } else {
-    console.warn('⚠️ Frontend build not found. Skipping frontend serving.');
+    console.warn('⚠️ client/build folder not found.');
   }
 }
 
-// Global error handler
+// === ✅ Global Error Handler ===
 app.use((err, req, res, next) => {
-  console.error('🚨 Error:', err);
+  console.error('Unhandled Error:', err);
   res.status(500).json({
-    error: 'Internal Server Error',
+    error: 'Something went wrong',
     details: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// MongoDB connection
-const connectWithRetry = () => {
+// === ✅ MongoDB Connection ===
+const connectDB = () => {
   mongoose.connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 5000,
-    retryWrites: true,
-    w: 'majority'
-  })
-    .then(() => console.log('✅ MongoDB connected'))
-    .catch((err) => {
-      console.error('❌ MongoDB connection error:', err);
-      console.log('Retrying in 5 seconds...');
-      setTimeout(connectWithRetry, 5000);
-    });
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  }).then(() => {
+    console.log('✅ MongoDB connected');
+  }).catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    setTimeout(connectDB, 5000);
+  });
 };
 
-connectWithRetry();
+connectDB();
 
-// Start the server
+// === ✅ Start Server ===
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`🔗 Access at: http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT} (${process.env.NODE_ENV})`);
 });
 
-// Graceful shutdown
+// === ✅ Graceful Shutdown ===
 const shutdown = (signal) => {
-  console.log(`🛑 Received ${signal}. Shutting down...`);
-  server.close(async () => {
-    console.log('🔌 HTTP server closed');
-    try {
-      await mongoose.disconnect();
+  console.log(`🛑 Received ${signal}, shutting down...`);
+  server.close(() => {
+    mongoose.disconnect().then(() => {
       console.log('🔌 MongoDB disconnected');
       process.exit(0);
-    } catch (err) {
-      console.error('❌ Shutdown error:', err);
+    }).catch(err => {
+      console.error('❌ Error during shutdown:', err);
       process.exit(1);
-    }
+    });
   });
 };
 
