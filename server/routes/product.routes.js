@@ -10,21 +10,18 @@ import { authenticateToken, verifyAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// ✅ Public Route - Fetch all products
 router.get("/", getAllProducts);
 
-// ✅ Admin-only - Add new product with image upload
 router.post(
-  "/",                        // Endpoint: POST /api/products/
-  authenticateToken,         // Middleware: Check if logged in
-  verifyAdmin,               // Middleware: Check if user is admin
-  upload.single("image"),    // Upload image using Cloudinary
-  addProduct                 // Controller to handle product creation
+  "/",
+  authenticateToken,
+  verifyAdmin,
+  upload.single("image"),
+  addProduct
 );
 
-// ✅ Admin-only - Delete product by ID
 router.delete(
-  "/:id",                    // Endpoint: DELETE /api/products/:id
+  "/:id",
   authenticateToken,
   verifyAdmin,
   deleteProduct

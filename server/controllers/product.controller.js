@@ -1,9 +1,8 @@
 import Product from "../models/Product.js";
 
-// ✅ Get all products (Public)
 export const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find().sort({ createdAt: -1 });
     console.log("✅ Fetched products:", products.length);
     res.status(200).json(products);
   } catch (err) {
@@ -12,20 +11,19 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-// ✅ Add new product (Admin only)
 export const addProduct = async (req, res) => {
   try {
     const { category, subTypes } = req.body;
-    const imageUrl = req.file?.path || req.file?.filename || null;
-
-    // Input validation
+    
+    // Get Cloudinary URL from middleware
+    const imageUrl = req.file?.secure_url || req.file?.path;
+    
     if (!category || !subTypes || !imageUrl) {
       return res.status(400).json({
         error: "Category, subTypes, and image are required",
       });
     }
 
-    // Ensure subTypes is an array
     const parsedSubTypes = Array.isArray(subTypes)
       ? subTypes
       : subTypes
@@ -39,7 +37,6 @@ export const addProduct = async (req, res) => {
       });
     }
 
-    // Create and save product
     const newProduct = new Product({
       category: category.trim(),
       subTypes: parsedSubTypes,
@@ -59,12 +56,10 @@ export const addProduct = async (req, res) => {
   }
 };
 
-// ✅ Delete product by ID (Admin only)
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ID format
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ error: "Invalid product ID format" });
     }
