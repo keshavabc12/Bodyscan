@@ -130,6 +130,20 @@ function Home() {
               className="d-block w-100"
               alt="Slide 1"
             />
+            <div className="carousel-caption d-none d-md-block">
+              <div className="container">
+                <div className="row">
+                  <div className="col-lg-8 col-md-10">
+                    <h2 className="display-5 fw-bold mb-3">Summer Collection 2024</h2>
+                    <p className="lead mb-4">Discover the latest summer trends and styles.</p>
+                    <button className="btn btn-light btn-lg">
+                      <i className="bi bi-arrow-right me-2"></i>
+                      Shop Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="carousel-item">
             <img
@@ -137,6 +151,20 @@ function Home() {
               className="d-block w-100"
               alt="Slide 2"
             />
+            <div className="carousel-caption d-none d-md-block">
+              <div className="container">
+                <div className="row">
+                  <div className="col-lg-8 col-md-10">
+                    <h2 className="display-5 fw-bold mb-3">Premium Quality</h2>
+                    <p className="lead mb-4">Only the finest materials and craftsmanship.</p>
+                    <button className="btn btn-light btn-lg">
+                      <i className="bi bi-award me-2"></i>
+                      Learn More
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="carousel-item">
             <img
@@ -144,6 +172,20 @@ function Home() {
               className="d-block w-100"
               alt="Slide 3"
             />
+            <div className="carousel-caption d-none d-md-block">
+              <div className="container">
+                <div className="row">
+                  <div className="col-lg-8 col-md-10">
+                    <h2 className="display-5 fw-bold mb-3">Exclusive Deals</h2>
+                    <p className="lead mb-4">Limited time offers on selected items.</p>
+                    <button className="btn btn-light btn-lg">
+                      <i className="bi bi-tag me-2"></i>
+                      View Offers
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <button
@@ -252,6 +294,8 @@ function Home() {
           </div>
         )}
       </div>
+
+
     </div>
   );
 }
