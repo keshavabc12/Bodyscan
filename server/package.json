@@ -21,6 +21,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "setup-admin": "node setup-admin.js",
+    "create-admin": "node create-admin.js",
     "build-client": "cd ../frontend && npm install && npm run build",
     "deploy-setup": "npm run build-client && npm install",
     "test": "jest --watchAll",
