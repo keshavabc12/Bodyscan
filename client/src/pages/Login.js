@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -17,7 +17,7 @@ function Login() {
     setError("");
 
     try {
-      const response = await axios.post("/api/admin/login", { 
+      const response = await api.post("/api/admin/login", { 
         username, 
         password 
       }, {

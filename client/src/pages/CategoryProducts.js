@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useParams } from "react-router-dom";
 
 function CategoryProducts() {
@@ -7,7 +7,7 @@ function CategoryProducts() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/products")
+    api.get("/api/products")
       .then(res => {
         const filtered = res.data.filter(
           product => product.category.toLowerCase() === categoryName.toLowerCase()
@@ -22,13 +22,12 @@ function CategoryProducts() {
       <h2 className="mb-4 text-capitalize">{categoryName} - Varieties</h2>
       <div className="row">
         {products.map(product => {
-          const imageName = product.image?.split("/").pop();
-          const imageUrl = `http://localhost:5000/uploads/${imageName}`;
+          const imageUrl = product.image; // Use the full Cloudinary URL
           return (
             <div key={product._id} className="col-md-4 mb-4">
               <div className="card h-100 text-center shadow-sm">
                 <img
-                  src={imageName ? imageUrl : "https://via.placeholder.com/300x400?text=No+Image"}
+                  src={imageUrl || "https://via.placeholder.com/300x400?text=No+Image"}
                   alt={product.category}
                   className="card-img-top img-fluid p-3"
                   style={{ maxHeight: '350px', objectFit: 'contain' }}

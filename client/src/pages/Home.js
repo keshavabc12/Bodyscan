@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -13,8 +13,8 @@ function Home() {
   const isAdmin = localStorage.getItem("isAdmin") === "true";
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/products")
+    api
+      .get("/api/products")
       .then((res) => {
         setProducts(res.data);
         setLoading(false);
@@ -37,10 +37,7 @@ function Home() {
   const handleDelete = async (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:5000/api/products/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(`/api/products/${productId}`);
         setProducts((prev) => prev.filter((p) => p._id !== productId));
       } catch (err) {
         console.error("Error deleting product:", err);

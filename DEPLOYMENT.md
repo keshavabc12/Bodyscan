@@ -37,4 +37,11 @@ Use Node.js version 18.x or higher.
 1. Make sure your MongoDB database is accessible from Render
 2. Ensure your Cloudinary account is active and credentials are correct
 3. The build process will install dependencies for both server and client
-4. The client build will be created and served by the server in production mode 
+4. The client build will be created and served by the server in production mode
+5. The frontend will automatically use the correct API URL in production (same origin)
+6. Bootstrap CDN is now allowed in the Content Security Policy
+
+## Troubleshooting:
+- If you see CSP errors, make sure the helmet configuration is properly set
+- If API calls fail, check that the environment variables are correctly set
+- The frontend will automatically detect production vs development environment 

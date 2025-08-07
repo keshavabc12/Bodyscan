@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 function AddProduct() {
@@ -49,12 +49,10 @@ function AddProduct() {
       formData.append("subTypes", subtypes);
       formData.append("image", image);
 
-      const token = localStorage.getItem("token");
-
-      const response = await axios.post("http://localhost:5000/api/products", formData, {
+      const response = await api.post("/api/products", formData, {
         withCredentials: true,
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
 
