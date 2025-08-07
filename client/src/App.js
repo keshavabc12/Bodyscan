@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import AdminPanel from './components/AdminPanel';
 import CategoryProducts from "./pages/CategoryProducts"; // adjust path
+import ApiTest from './components/ApiTest'; // Temporary for testing
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -15,7 +16,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/admin" element={<Login />} />
         <Route path="/admin-panel" element={<AdminPanel />} />
-<Route path="/category/:categoryName" element={<CategoryProducts />} />
+        <Route path="/category/:categoryName" element={<CategoryProducts />} />
+        <Route path="/test" element={<ApiTest />} /> {/* Temporary for testing */}
       </Routes>
     </Router>
   );

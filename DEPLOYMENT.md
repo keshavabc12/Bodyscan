@@ -50,5 +50,11 @@ Use Node.js version 18.x or higher.
 
 ## Recent Fixes:
 1. **Bootstrap CDN Issue**: Removed CDN links from index.html and bundled Bootstrap locally
-2. **CSP Configuration**: Updated helmet configuration to allow necessary external resources
-3. **API Configuration**: Added debugging to help troubleshoot API URL issues 
+2. **CSP Configuration**: Temporarily disabled CSP to resolve deployment issues
+3. **API Configuration**: Added debugging to help troubleshoot API URL issues
+4. **CORS Configuration**: Added Render.com domains to allowed origins
+
+## Next Steps After Deployment:
+1. Once the application is working, re-enable CSP with proper configuration
+2. Monitor browser console for API debugging information
+3. Verify that all API calls are working correctly 

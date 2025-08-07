@@ -4,6 +4,9 @@ import API_CONFIG from '../config/api';
 // Create axios instance with base configuration
 const api = axios.create(API_CONFIG);
 
+// Debug logging for API instance
+console.log('API Instance created with baseURL:', api.defaults.baseURL);
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {

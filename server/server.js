@@ -37,19 +37,7 @@ const __dirname = path.dirname(__filename);
 
 // Security and performance middlewares
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://via.placeholder.com"],
-      connectSrc: ["'self'", "https://api.render.com", "https://*.onrender.com", "https://*.render.com"],
-      fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  },
+  contentSecurityPolicy: false, // Temporarily disable CSP to resolve deployment issues
   crossOriginEmbedderPolicy: false
 }));
 app.use(compression());
@@ -60,7 +48,10 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'http://[::1]:3000',
   ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
+  // Add Render.com domains
+  'https://*.onrender.com',
+  'https://*.render.com'
 ].filter(Boolean);
 
 app.use(cors({
@@ -137,6 +128,20 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     memoryUsage: process.memoryUsage(),
     uptime: process.uptime()
+  });
+});
+
+// Test endpoint for debugging
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: 'API is working correctly',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    headers: {
+      origin: req.headers.origin,
+      host: req.headers.host,
+      'user-agent': req.headers['user-agent']?.substring(0, 100)
+    }
   });
 });
 
