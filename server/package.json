@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "cloudinary": "^1.42.0",
+    "cloudinary": "^2.7.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

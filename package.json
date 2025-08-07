@@ -1,0 +1,25 @@
+{
+  "name": "mern-clothing-store",
+  "version": "1.0.0",
+  "description": "MERN Stack Clothing Store",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "build": "npm run install-all && cd client && npm run build",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "install-all": "npm run install-server && npm run install-client",
+    "heroku-postbuild": "npm run install-client && npm run build",
+    "render-build": "npm run install-all && cd client && npm run build"
+  },
+  "keywords": ["mern", "react", "node", "express", "mongodb"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
