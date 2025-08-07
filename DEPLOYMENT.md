@@ -55,6 +55,19 @@ Use Node.js version 18.x or higher.
 4. **CORS Configuration**: Added Render.com domains to allowed origins
 
 ## Next Steps After Deployment:
-1. Once the application is working, re-enable CSP with proper configuration
-2. Monitor browser console for API debugging information
-3. Verify that all API calls are working correctly 
+1. **Test the API**: Visit `/test` route to check API configuration and health
+2. **Check Admin Users**: The test will show if admin users exist in the database
+3. **Create Admin User**: If no admin users exist, run `npm run setup-admin` in the server directory
+4. **Monitor Logs**: Check server logs for detailed login debugging information
+5. **Re-enable CSP**: Once everything is working, re-enable CSP with proper configuration
+
+## Default Admin Credentials (if created via setup-admin):
+- Username: `admin`
+- Password: `admin123`
+- ⚠️ **IMPORTANT**: Change this password in production!
+
+## Debugging Endpoints:
+- `/api/health` - Server health and environment check
+- `/api/test` - Basic API functionality test
+- `/api/admin/check` - Check if admin users exist
+- `/test` - Frontend test page with all API checks 

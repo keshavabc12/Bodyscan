@@ -3,6 +3,8 @@ import api from '../services/api';
 
 function ApiTest() {
   const [testResult, setTestResult] = useState(null);
+  const [healthResult, setHealthResult] = useState(null);
+  const [adminResult, setAdminResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -10,8 +12,15 @@ function ApiTest() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/api/test');
-      setTestResult(response.data);
+      const [testResponse, healthResponse, adminResponse] = await Promise.all([
+        api.get('/api/test'),
+        api.get('/api/health'),
+        api.get('/api/admin/check')
+      ]);
+      
+      setTestResult(testResponse.data);
+      setHealthResult(healthResponse.data);
+      setAdminResult(adminResponse.data);
     } catch (err) {
       setError(err.message);
       console.error('API Test Error:', err);
@@ -32,7 +41,7 @@ function ApiTest() {
         onClick={testApi}
         disabled={loading}
       >
-        {loading ? 'Testing...' : 'Test API Connection'}
+        {loading ? 'Testing...' : 'Test All APIs'}
       </button>
       
       {error && (
@@ -45,6 +54,20 @@ function ApiTest() {
         <div className="alert alert-success">
           <h5>✅ API Test Successful!</h5>
           <pre>{JSON.stringify(testResult, null, 2)}</pre>
+        </div>
+      )}
+
+      {healthResult && (
+        <div className="alert alert-info">
+          <h5>🏥 Health Check</h5>
+          <pre>{JSON.stringify(healthResult, null, 2)}</pre>
+        </div>
+      )}
+
+      {adminResult && (
+        <div className="alert alert-warning">
+          <h5>👤 Admin Check</h5>
+          <pre>{JSON.stringify(adminResult, null, 2)}</pre>
         </div>
       )}
     </div>

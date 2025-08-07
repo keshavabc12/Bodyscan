@@ -127,7 +127,12 @@ app.get('/api/health', (req, res) => {
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     environment: process.env.NODE_ENV || 'development',
     memoryUsage: process.memoryUsage(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    env: {
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasMongoUri: !!process.env.MONGO_URI,
+      hasCloudinary: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
+    }
   });
 });
 
@@ -143,6 +148,22 @@ app.get('/api/test', (req, res) => {
       'user-agent': req.headers['user-agent']?.substring(0, 100)
     }
   });
+});
+
+// Admin check endpoint
+app.get('/api/admin/check', async (req, res) => {
+  try {
+    const Admin = (await import('./models/Admin.js')).default;
+    const adminCount = await Admin.countDocuments();
+    res.json({
+      adminCount,
+      message: adminCount > 0 ? 'Admin users exist' : 'No admin users found',
+      suggestion: adminCount === 0 ? 'Run npm run setup-admin to create default admin' : null
+    });
+  } catch (err) {
+    console.error('Admin check error:', err);
+    res.status(500).json({ error: 'Failed to check admin users' });
+  }
 });
 
 // Production frontend serving
