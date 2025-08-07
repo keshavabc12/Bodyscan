@@ -35,6 +35,9 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Trust proxy for rate limiting (fixes X-Forwarded-For warning)
+app.set('trust proxy', 1);
+
 // Security and performance middlewares
 app.use(helmet({
   contentSecurityPolicy: false, // Temporarily disable CSP to resolve deployment issues
@@ -51,7 +54,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   // Add Render.com domains
   'https://*.onrender.com',
-  'https://*.render.com'
+  'https://*.render.com',
+  'https://bodyscan.onrender.com' // Add your specific domain
 ].filter(Boolean);
 
 app.use(cors({
@@ -62,13 +66,22 @@ app.use(cors({
     // Case-insensitive origin matching
     const normalizedOrigin = origin.toLowerCase();
     
-    // Check against allowed origins
-    const isAllowed = allowedOrigins.some(allowed => 
-      normalizedOrigin === allowed.toLowerCase() || 
-      normalizedOrigin.includes('localhost') || 
-      normalizedOrigin.includes('127.0.0.1') || 
-      normalizedOrigin.includes('::1')
-    );
+    // Check against allowed origins with proper wildcard handling
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedAllowed = allowed.toLowerCase();
+      
+      // Handle wildcard domains
+      if (normalizedAllowed.includes('*')) {
+        const domain = normalizedAllowed.replace('*.', '');
+        return normalizedOrigin.includes(domain);
+      }
+      
+      // Exact match
+      return normalizedOrigin === normalizedAllowed || 
+             normalizedOrigin.includes('localhost') || 
+             normalizedOrigin.includes('127.0.0.1') || 
+             normalizedOrigin.includes('::1');
+    });
 
     if (isAllowed) {
       callback(null, true);
