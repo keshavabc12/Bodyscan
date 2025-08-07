@@ -44,4 +44,11 @@ Use Node.js version 18.x or higher.
 ## Troubleshooting:
 - If you see CSP errors, make sure the helmet configuration is properly set
 - If API calls fail, check that the environment variables are correctly set
-- The frontend will automatically detect production vs development environment 
+- The frontend will automatically detect production vs development environment
+- Bootstrap is now bundled locally instead of using CDN to avoid CSP issues
+- Check browser console for API base URL debugging information
+
+## Recent Fixes:
+1. **Bootstrap CDN Issue**: Removed CDN links from index.html and bundled Bootstrap locally
+2. **CSP Configuration**: Updated helmet configuration to allow necessary external resources
+3. **API Configuration**: Added debugging to help troubleshoot API URL issues 

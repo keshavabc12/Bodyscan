@@ -40,11 +40,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-      connectSrc: ["'self'", "https://api.render.com", "https://*.onrender.com"],
-      fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://via.placeholder.com"],
+      connectSrc: ["'self'", "https://api.render.com", "https://*.onrender.com", "https://*.render.com"],
+      fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"]
@@ -108,7 +108,7 @@ app.use(cookieParser());
 
 // Enhanced request logging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} from ${req.ip} | Origin: ${req.headers.origin || 'none'}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} from ${req.ip} | Origin: ${req.headers.origin || 'none'} | User-Agent: ${req.headers['user-agent']?.substring(0, 50) || 'none'}`);
   next();
 });
 
